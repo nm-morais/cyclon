@@ -1,0 +1,13 @@
+self:
+  host: "127.0.0.1"
+  port: 1200
+  analyticsPort: 1300
+bootstrapPeers:
+  - host: "127.0.0.1"
+    port: 1200
+    analyticsPort: 1300
+dialTimeoutMiliseconds: 8000
+logFolder: /tmp/logs/
+cacheViewSize: 7
+shuffleTimerSeconds: 5
+l: 5

@@ -106,6 +106,9 @@ func (c *Cyclon) Start() {
 		if peer.PeersEqual(bootstrap, c.babel.SelfPeer()) {
 			continue
 		}
+		if c.cyclonView.isFull() {
+			break
+		}
 		c.cyclonView.add(&PeerState{
 			Peer: bootstrap,
 			age:  0,
@@ -123,6 +126,9 @@ func (c *Cyclon) HandleShuffleTimer(t timer.Timer) {
 		}
 		c.logger.Warn("Had no neighbors in shuffle reply, adding bootstrap peer")
 		for _, bootstrap := range c.bootstrapNodes {
+			if c.cyclonView.isFull() {
+				break
+			}
 			c.cyclonView.add(&PeerState{
 				Peer: bootstrap,
 				age:  0,
@@ -136,7 +142,7 @@ func (c *Cyclon) HandleShuffleTimer(t timer.Timer) {
 	viewAsArr := c.cyclonView.asArr
 	sort.Sort(viewAsArr)
 	q := viewAsArr[0]
-	c.logger.Infof("Oldest level peer: %s:%d", q.Peer.String(), q.age)
+	// c.logger.Infof("Oldest level peer: %s:%d", q.Peer.String(), q.age)
 	delete(c.pendingCyclonExchanges, q.String())
 	subset := append(c.cyclonView.getRandomElementsFromView(c.conf.L-1, q), &PeerState{
 		Peer: c.babel.SelfPeer(),
@@ -146,12 +152,12 @@ func (c *Cyclon) HandleShuffleTimer(t timer.Timer) {
 	c.cyclonView.remove(q)
 	toSend := NewShuffleMsg(subset)
 	c.sendMessageTmpTransport(toSend, q)
-	c.logger.Infof("Sending shuffle message %+v to %s", toSend, q)
+	// c.logger.Infof("Sending shuffle message %+v to %s", toSend, q)
 }
 
 func (c *Cyclon) HandleShuffleMessage(sender peer.Peer, msg message.Message) {
 	shuffleMsg := msg.(*ShuffleMessage)
-	c.logger.Infof("Received shuffle message %+v from %s", shuffleMsg, sender)
+	// c.logger.Infof("Received shuffle message %+v from %s", shuffleMsg, sender)
 	peersToReply := c.cyclonView.getRandomElementsFromView(len(shuffleMsg.peers), shuffleMsg.peers...)
 	toSend := NewShuffleMsgReply(peersToReply)
 	c.sendMessageTmpTransport(toSend, sender)
@@ -160,7 +166,7 @@ func (c *Cyclon) HandleShuffleMessage(sender peer.Peer, msg message.Message) {
 
 func (c *Cyclon) HandleShuffleMessageReply(sender peer.Peer, msg message.Message) {
 	shuffleMsgReply := msg.(*ShuffleMessageReply)
-	c.logger.Infof("Received shuffle reply message %+v from %s", shuffleMsgReply, sender)
+	// c.logger.Infof("Received shuffle reply message %+v from %s", shuffleMsgReply, sender)
 	c.mergeCyclonViewWith(shuffleMsgReply.ToPeerStateArr(), c.pendingCyclonExchanges[sender.String()], sender)
 	delete(c.pendingCyclonExchanges, sender.String())
 }
